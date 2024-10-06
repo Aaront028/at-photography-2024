@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Facebook, Instagram, Sun, Moon, Mail } from 'lucide-react'
 import '../app/mobile.css'
+import Image from 'next/image'
 
 interface Image {
   src: string;
@@ -67,8 +68,6 @@ export default function Portfolio() {
   const [showEntrance, setShowEntrance] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [lastTouchY, setLastTouchY] = useState(0)
-  const headerRef = useRef<HTMLDivElement>(null)
-  const footerRef = useRef<HTMLDivElement>(null)
   const hideNavTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -334,13 +333,15 @@ export default function Portfolio() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="aspect-square overflow-hidden rounded-lg cursor-pointer"
+                    className="aspect-square overflow-hidden rounded-lg cursor-pointer relative"
                     onClick={() => handleImageClick(image)}
                   >
-                    <img
+                    <Image
                       src={image.src}
                       alt={image.alt}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="object-cover"
                       draggable="false"
                       onDragStart={(e) => e.preventDefault()}
                     />
@@ -367,13 +368,17 @@ export default function Portfolio() {
             >
               <X size={24} />
             </button>
-            <img
-              src={selectedImage.src}
-              alt={selectedImage.alt}
-              className="max-w-full max-h-full object-contain"
-              draggable="false"
-              onDragStart={(e) => e.preventDefault()}
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={selectedImage.src}
+                alt={selectedImage.alt}
+                fill
+                sizes="100vw"
+                className="object-contain"
+                draggable="false"
+                onDragStart={(e) => e.preventDefault()}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
