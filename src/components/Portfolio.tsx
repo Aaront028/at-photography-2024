@@ -69,6 +69,7 @@ export default function Portfolio() {
   const [lastScrollY, setLastScrollY] = useState(0)
   const [lastTouchY, setLastTouchY] = useState(0)
   const hideNavTimer = useRef<NodeJS.Timeout | null>(null)
+  const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -133,13 +134,11 @@ export default function Portfolio() {
   const handleTouchStart = (event: React.TouchEvent) => {
     setLastTouchY(event.touches[0].clientY)
     setTouchStartX(event.touches[0].clientX)
+    setIsSwiping(false)
 
     if (isMobile) {
-      // Show header and footer on touch start for mobile
       setShowHeader(true)
       setShowFooter(true)
-
-      // Clear any existing hide timer
       if (hideNavTimer.current) {
         clearTimeout(hideNavTimer.current)
       }
@@ -152,21 +151,20 @@ export default function Portfolio() {
     const deltaY = touchY - lastTouchY
     const deltaX = touchX - touchStartX
 
+    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+      setIsSwiping(true)
+    }
+
     if (isMobile) {
-      // Determine if the user is scrolling vertically or swiping horizontally
       if (Math.abs(deltaY) > Math.abs(deltaX)) {
-        // Vertical scrolling
         if (deltaY < 0) {
-          // Scrolling up
           setShowHeader(true)
           setShowFooter(true)
         } else {
-          // Scrolling down
           setShowHeader(false)
           setShowFooter(false)
         }
       } else {
-        // Horizontal swiping - we'll handle this in touchEnd
         setTouchEndX(touchX)
       }
     }
@@ -176,27 +174,28 @@ export default function Portfolio() {
 
   const handleTouchEnd = () => {
     if (isMobile) {
-      const swipeThreshold = 50 // Minimum swipe distance to trigger section change
+      const swipeThreshold = 50
 
       if (Math.abs(touchEndX - touchStartX) > swipeThreshold) {
         if (touchEndX < touchStartX && activeSection < sections.length - 1) {
-          // Swipe left
           setActiveSection(activeSection + 1)
           setDirection(1)
         } else if (touchEndX > touchStartX && activeSection > 0) {
-          // Swipe right
           setActiveSection(activeSection - 1)
           setDirection(-1)
         }
         setShowSwipePrompt(false)
       }
 
-      // Set a timer to hide the header and footer after 3 seconds
       hideNavTimer.current = setTimeout(() => {
         setShowHeader(false)
         setShowFooter(false)
       }, 3000)
     }
+
+    setTimeout(() => {
+      setIsSwiping(false)
+    }, 100)
   }
 
   const toggleTheme = () => {
@@ -228,12 +227,10 @@ export default function Portfolio() {
 
   const handleImageClick = (image: Image) => {
     if (isMobile) {
-      // For mobile, use the existing logic
-      if (Math.abs(touchEndX - touchStartX) < 10) {
+      if (!isSwiping) {
         openFullscreen(image)
       }
     } else {
-      // For desktop, only open if not dragging
       if (!isDragging) {
         openFullscreen(image)
       }
