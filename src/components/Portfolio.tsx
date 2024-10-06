@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Facebook, Instagram, Sun, Moon, Mail } from 'lucide-react'
 
@@ -55,13 +55,10 @@ export default function Portfolio() {
   const [activeSection, setActiveSection] = useState(0)
   const [showSwipePrompt, setShowSwipePrompt] = useState(true)
   const [direction, setDirection] = useState(0)
-  const [isLongPressing, setIsLongPressing] = useState(false)
   const [showHeader, setShowHeader] = useState(false)
   const [showFooter, setShowFooter] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const controls = useAnimation()
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null)
-  const clickTimer = useRef<NodeJS.Timeout | null>(null)
   const [touchStartX, setTouchStartX] = useState(0)
   const [touchEndX, setTouchEndX] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
