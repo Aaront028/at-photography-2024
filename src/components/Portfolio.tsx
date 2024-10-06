@@ -1,7 +1,8 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Facebook, Instagram, Sun, Moon, Mail } from 'lucide-react'
+import '../app/mobile.css'
 
 interface Image {
   src: string;
@@ -64,15 +65,43 @@ export default function Portfolio() {
   const [isMobile, setIsMobile] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [showEntrance, setShowEntrance] = useState(true)
+  const [lastScrollY, setLastScrollY] = useState(0)
+  const [lastTouchY, setLastTouchY] = useState(0)
+  const headerRef = useRef<HTMLDivElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
+  const hideNavTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768) // Adjust this breakpoint as needed
+      setIsMobile(window.innerWidth <= 768)
     }
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  const controlNavigation = useCallback(() => {
+    if (typeof window !== 'undefined' && isMobile) {
+      const currentScrollY = window.scrollY
+
+      if (currentScrollY > lastScrollY) { // Scrolling down
+        setShowHeader(false)
+        setShowFooter(false)
+      } else { // Scrolling up
+        setShowHeader(true)
+        setShowFooter(true)
+      }
+
+      setLastScrollY(currentScrollY)
+    }
+  }, [lastScrollY, isMobile])
+
+  useEffect(() => {
+    if (isMobile) {
+      window.addEventListener('scroll', controlNavigation)
+      return () => window.removeEventListener('scroll', controlNavigation)
+    }
+  }, [controlNavigation, isMobile])
 
   const openFullscreen = (image: Image) => {
     setSelectedImage(image)
@@ -103,30 +132,72 @@ export default function Portfolio() {
   }
 
   const handleTouchStart = (event: React.TouchEvent) => {
+    setLastTouchY(event.touches[0].clientY)
     setTouchStartX(event.touches[0].clientX)
+
+    if (isMobile) {
+      // Show header and footer on touch start for mobile
+      setShowHeader(true)
+      setShowFooter(true)
+
+      // Clear any existing hide timer
+      if (hideNavTimer.current) {
+        clearTimeout(hideNavTimer.current)
+      }
+    }
   }
 
   const handleTouchMove = (event: React.TouchEvent) => {
-    setTouchEndX(event.touches[0].clientX)
-  }
+    const touchY = event.touches[0].clientY
+    const touchX = event.touches[0].clientX
+    const deltaY = touchY - lastTouchY
+    const deltaX = touchX - touchStartX
 
-  const handleTouchEnd = (event: React.TouchEvent) => {
-    const touchEndX = event.changedTouches[0].clientX
-    const diffX = touchEndX - touchStartX
-
-    if (Math.abs(diffX) > 50) {
-      if (diffX > 0 && activeSection > 0) {
-        setActiveSection(activeSection - 1)
-        setDirection(-1)
-      } else if (diffX < 0 && activeSection < sections.length - 1) {
-        setActiveSection(activeSection + 1)
-        setDirection(1)
+    if (isMobile) {
+      // Determine if the user is scrolling vertically or swiping horizontally
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        // Vertical scrolling
+        if (deltaY < 0) {
+          // Scrolling up
+          setShowHeader(true)
+          setShowFooter(true)
+        } else {
+          // Scrolling down
+          setShowHeader(false)
+          setShowFooter(false)
+        }
+      } else {
+        // Horizontal swiping - we'll handle this in touchEnd
+        setTouchEndX(touchX)
       }
-      setShowSwipePrompt(false)
     }
 
-    setTouchStartX(0)
-    setTouchEndX(0)
+    setLastTouchY(touchY)
+  }
+
+  const handleTouchEnd = () => {
+    if (isMobile) {
+      const swipeThreshold = 50 // Minimum swipe distance to trigger section change
+
+      if (Math.abs(touchEndX - touchStartX) > swipeThreshold) {
+        if (touchEndX < touchStartX && activeSection < sections.length - 1) {
+          // Swipe left
+          setActiveSection(activeSection + 1)
+          setDirection(1)
+        } else if (touchEndX > touchStartX && activeSection > 0) {
+          // Swipe right
+          setActiveSection(activeSection - 1)
+          setDirection(-1)
+        }
+        setShowSwipePrompt(false)
+      }
+
+      // Set a timer to hide the header and footer after 3 seconds
+      hideNavTimer.current = setTimeout(() => {
+        setShowHeader(false)
+        setShowFooter(false)
+      }, 3000)
+    }
   }
 
   const toggleTheme = () => {
@@ -180,7 +251,12 @@ export default function Portfolio() {
   }, [])
 
   return (
-    <div className={`min-h-screen overflow-hidden ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+    <div
+      className={`min-h-screen overflow-hidden ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <AnimatePresence>
         {showEntrance && (
           <motion.div
@@ -199,8 +275,8 @@ export default function Portfolio() {
 
       <motion.div
         className="fixed top-0 left-0 right-0 z-10"
-        onHoverStart={() => setShowHeader(true)}
-        onHoverEnd={() => setShowHeader(false)}
+        onHoverStart={() => !isMobile && setShowHeader(true)}
+        onHoverEnd={() => !isMobile && setShowHeader(false)}
       >
         <motion.header
           className={`${isDarkMode ? 'bg-gray-800 bg-opacity-50' : 'bg-white bg-opacity-50'} backdrop-blur-md`}
@@ -304,8 +380,8 @@ export default function Portfolio() {
 
       <motion.div
         className="fixed bottom-0 left-0 right-0 z-10"
-        onHoverStart={() => setShowFooter(true)}
-        onHoverEnd={() => setShowFooter(false)}
+        onHoverStart={() => !isMobile && setShowFooter(true)}
+        onHoverEnd={() => !isMobile && setShowFooter(false)}
       >
         <motion.footer
           className={`${isDarkMode ? 'bg-gray-800 bg-opacity-50' : 'bg-white bg-opacity-50'} backdrop-blur-md py-4`}

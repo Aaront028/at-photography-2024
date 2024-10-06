@@ -1,0 +1,17 @@
+.mobile-header,
+.mobile-footer {
+  transition: transform 0.3s ease-in-out;
+}
+
+.mobile-header-hidden {
+  transform: translateY(-100%);
+}
+
+.mobile-footer-hidden {
+  transform: translateY(100%);
+}
+
+.mobile-header-visible,
+.mobile-footer-visible {
+  transform: translateY(0);
+}
