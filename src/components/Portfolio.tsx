@@ -63,6 +63,16 @@ export default function Portfolio() {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const clickTimer = useRef<NodeJS.Timeout | null>(null)
   const [touchStartX, setTouchStartX] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768) // Adjust this breakpoint as needed
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const openFullscreen = (image: Image) => {
     setSelectedImage(image)
@@ -152,6 +162,12 @@ export default function Portfolio() {
     }
   }, [activeSection])
 
+  const handleImageClick = (image: Image) => {
+    if (isMobile) {
+      openFullscreen(image)
+    }
+  }
+
   return (
     <div className={`min-h-screen overflow-hidden ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
       <motion.div
@@ -186,10 +202,15 @@ export default function Portfolio() {
         animate={{ y: showHeader ? 100 : 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div
+        <motion.div
           className="min-h-screen px-4"
-          onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
-          onTouchEnd={handleTouchEnd}
+          drag={isMobile ? false : "x"}
+          dragElastic={1}
+          onDragEnd={isMobile ? undefined : handleDragEnd}
+          animate={controls}
+          dragConstraints={{ left: 0, right: 0 }}
+          onTouchStart={isMobile ? (e) => setTouchStartX(e.touches[0].clientX) : undefined}
+          onTouchEnd={isMobile ? handleTouchEnd : undefined}
         >
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
@@ -208,11 +229,11 @@ export default function Portfolio() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="aspect-square overflow-hidden rounded-lg cursor-pointer"
+                    className={`aspect-square overflow-hidden rounded-lg ${isMobile ? 'cursor-pointer' : ''}`}
                     onTouchStart={(e) => handleTouchStart(e, image)}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
-                    onClick={() => openFullscreen(image)}
+                    onClick={() => handleImageClick(image)}
                   >
                     <img
                       src={image.src}
@@ -226,7 +247,7 @@ export default function Portfolio() {
               </div>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
       </motion.div>
 
       <AnimatePresence>
