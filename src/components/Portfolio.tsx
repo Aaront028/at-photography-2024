@@ -63,7 +63,9 @@ export default function Portfolio() {
   const longPressTimer = useRef<NodeJS.Timeout | null>(null)
   const clickTimer = useRef<NodeJS.Timeout | null>(null)
   const [touchStartX, setTouchStartX] = useState(0)
+  const [touchEndX, setTouchEndX] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -82,6 +84,10 @@ export default function Portfolio() {
     setSelectedImage(null)
   }
 
+  const handleDragStart = () => {
+    setIsDragging(true)
+  }
+
   const handleDragEnd = (_event: never, info: { offset: { x: number } }) => {
     const threshold = 50
     if (info.offset.x > threshold && activeSection > 0) {
@@ -95,24 +101,15 @@ export default function Portfolio() {
     }
     void controls.start({ x: 0 })
     setShowSwipePrompt(false)
+    setIsDragging(false)
   }
 
-  const handleTouchStart = (event: React.TouchEvent, image: Image) => {
+  const handleTouchStart = (event: React.TouchEvent) => {
     setTouchStartX(event.touches[0].clientX)
-    longPressTimer.current = setTimeout(() => {
-      setIsLongPressing(true)
-    }, 250)
-
-    clickTimer.current = setTimeout(() => {
-      if (!isLongPressing) {
-        openFullscreen(image)
-      }
-    }, 250)
   }
 
   const handleTouchMove = (event: React.TouchEvent) => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current)
-    if (clickTimer.current) clearTimeout(clickTimer.current)
+    setTouchEndX(event.touches[0].clientX)
   }
 
   const handleTouchEnd = (event: React.TouchEvent) => {
@@ -130,9 +127,8 @@ export default function Portfolio() {
       setShowSwipePrompt(false)
     }
 
-    if (longPressTimer.current) clearTimeout(longPressTimer.current)
-    if (clickTimer.current) clearTimeout(clickTimer.current)
-    setIsLongPressing(false)
+    setTouchStartX(0)
+    setTouchEndX(0)
   }
 
   const toggleTheme = () => {
@@ -164,7 +160,15 @@ export default function Portfolio() {
 
   const handleImageClick = (image: Image) => {
     if (isMobile) {
-      openFullscreen(image)
+      // For mobile, use the existing logic
+      if (Math.abs(touchEndX - touchStartX) < 10) {
+        openFullscreen(image)
+      }
+    } else {
+      // For desktop, only open if not dragging
+      if (!isDragging) {
+        openFullscreen(image)
+      }
     }
   }
 
@@ -206,11 +210,13 @@ export default function Portfolio() {
           className="min-h-screen px-4"
           drag={isMobile ? false : "x"}
           dragElastic={1}
-          onDragEnd={isMobile ? undefined : handleDragEnd}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
           animate={controls}
           dragConstraints={{ left: 0, right: 0 }}
-          onTouchStart={isMobile ? (e) => setTouchStartX(e.touches[0].clientX) : undefined}
-          onTouchEnd={isMobile ? handleTouchEnd : undefined}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
@@ -229,10 +235,7 @@ export default function Portfolio() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className={`aspect-square overflow-hidden rounded-lg ${isMobile ? 'cursor-pointer' : ''}`}
-                    onTouchStart={(e) => handleTouchStart(e, image)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
+                    className="aspect-square overflow-hidden rounded-lg cursor-pointer"
                     onClick={() => handleImageClick(image)}
                   >
                     <img
@@ -297,14 +300,10 @@ export default function Portfolio() {
                 <Instagram size={24} />
                 <span className="sr-only">Instagram</span>
               </a>
-              <a href="mailto:info@aarontan.co.nz" className={`${isDarkMode ? 'text-white hover:text-gray-300' : 'text-gray-900 hover:text-gray-600'}`}>
+              <a href="mailto:info@aarontan.co.nz" className={`${isDarkMode ? 'text-white hover:text-gray-300' : 'text-gray-900 hover:text-gray-600'}`} title="info@aarontan.co.nz">
                 <Mail size={24} />
-                <span className="sr-only">Email</span>
+                <span className="sr-only">Email: info@aarontan.co.nz</span>
               </a>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Mail size={16} className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} />
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>info@aarontan.co.nz</p>
             </div>
             <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>All images and content © 2024 Aaron Tan</p>
           </div>
