@@ -63,6 +63,7 @@ export default function Portfolio() {
   const [touchEndX, setTouchEndX] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [showEntrance, setShowEntrance] = useState(true)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -169,8 +170,33 @@ export default function Portfolio() {
     }
   }
 
+  useEffect(() => {
+    // Fade out the entrance after 3 seconds
+    const timer = setTimeout(() => {
+      setShowEntrance(false)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <div className={`min-h-screen overflow-hidden ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+      <AnimatePresence>
+        {showEntrance && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="fixed inset-0 flex items-center justify-center z-50 bg-black"
+          >
+            <h1 className="text-4xl md:text-6xl font-bold text-white">
+              Aaron Tan Photography
+            </h1>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div
         className="fixed top-0 left-0 right-0 z-10"
         onHoverStart={() => setShowHeader(true)}
